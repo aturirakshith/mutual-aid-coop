@@ -1,0 +1,23 @@
+# NOTE: The project reuses the existing 'zizi-postgres' container (postgres:15-alpine)
+# that is already running on localhost:5432 with user=postgres, password=postgres.
+# The database 'macs_db' was created inside that container.
+#
+# DATABASE_URL="postgresql://postgres:postgres@localhost:5432/macs_db"
+#
+# To start a fresh dedicated container instead, uncomment below:
+#
+# services:
+#   postgres:
+#     image: postgres:16-alpine
+#     container_name: macs_postgres
+#     environment:
+#       POSTGRES_USER: macs
+#       POSTGRES_PASSWORD: macs_secret
+#       POSTGRES_DB: macs_db
+#     ports:
+#       - "5433:5432"
+#     volumes:
+#       - macs_pgdata:/var/lib/postgresql/data
+#
+# volumes:
+#   macs_pgdata:

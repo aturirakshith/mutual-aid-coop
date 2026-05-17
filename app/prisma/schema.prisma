@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Group {
+  id                        String   @id @default(cuid())
+  name                      String
+  monthlyContributionPaise  Int      // e.g. 100000 = ₹1,000
+  defaultInterestRateBps    Int      // basis points, 100 = 1%
+  lateFeePassse             Int      // late fee in paise
+  defaultTenureMonths       Int
+  emiDayOfMonth             Int      // 1-28
+  minGuarantorsPerLoan      Int      @default(1)
+  createdAt                 DateTime @default(now())
+
+  users                     User[]
+  contributionPeriods       ContributionPeriod[]
+}
+
+model User {
+  id                 String    @id @default(cuid())
+  groupId            String
+  mobile             String    // 10-digit, unique within group; = username
+  name               String
+  passwordHash       String
+  role               Role      @default(MEMBER)
+  mustChangePassword Boolean   @default(false)
+  active             Boolean   @default(true)
+  deactivatedAt      DateTime?
+  createdAt          DateTime  @default(now())
+
+  group                          Group                            @relation(fields: [groupId], references: [id])
+  contributions                  Contribution[]
+  loans                          Loan[]                           @relation("borrower")
+  guaranteedLoans                LoanGuarantor[]
+  settlementsTriggered           Settlement[]                     @relation("triggered_by")
+  settlementGuarantorApplications SettlementGuarantorApplication[]
+  eventsActed                    Event[]
+  contributionsRecorded          Contribution[]                   @relation("recorded_by")
+  emisRecorded                   Emi[]                            @relation("recorded_by")
+  loansApproved                  Loan[]                           @relation("approved_by")
+
+  @@unique([groupId, mobile])
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+model ContributionPeriod {
+  id            String         @id @default(cuid())
+  groupId       String
+  year          Int
+  month         Int            // 1-12
+  createdAt     DateTime       @default(now())
+
+  group         Group          @relation(fields: [groupId], references: [id])
+  contributions Contribution[]
+
+  @@unique([groupId, year, month])
+}
+
+model Contribution {
+  id            String             @id @default(cuid())
+  periodId      String
+  userId        String
+  status        ContributionStatus @default(UNPAID)
+  amountPaise   Int
+  paidAt        DateTime?
+  note          String?
+  lateFeePaise  Int                @default(0)
+  recordedById  String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  period        ContributionPeriod @relation(fields: [periodId], references: [id])
+  user          User               @relation(fields: [userId], references: [id])
+  recordedBy    User?              @relation("recorded_by", fields: [recordedById], references: [id])
+
+  @@unique([periodId, userId])
+}
+
+enum ContributionStatus {
+  PAID
+  UNPAID
+  REVERSED
+}
+
+model Loan {
+  id                    String     @id @default(cuid())
+  userId                String
+  requestedAmountPaise  Int
+  requestedTenure       Int
+  reason                String
+  status                LoanStatus @default(PENDING)
+  // Admin-set on approval
+  principalPaise        Int?
+  interestRateBps       Int?
+  tenureMonths          Int?
+  interestPaise         Int?
+  disbursalPaise        Int?
+  firstEmiDate          DateTime?
+  ineligibilityWaiverNote String?
+  // Timestamps
+  requestedAt           DateTime   @default(now())
+  approvedAt            DateTime?
+  disbursedAt           DateTime?
+  closedAt              DateTime?
+  approvedById          String?
+
+  user                  User              @relation("borrower", fields: [userId], references: [id])
+  approvedBy            User?             @relation("approved_by", fields: [approvedById], references: [id])
+  guarantors            LoanGuarantor[]
+  emis                  Emi[]
+  settlements           Settlement[]
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  DISBURSED
+  CLOSED
+  CLOSED_VIA_SETTLEMENT
+  REJECTED
+}
+
+model LoanGuarantor {
+  loanId  String
+  userId  String
+
+  loan    Loan   @relation(fields: [loanId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@id([loanId, userId])
+}
+
+model Emi {
+  id           String    @id @default(cuid())
+  loanId       String
+  seq          Int
+  dueDate      DateTime
+  amountPaise  Int
+  status       EmiStatus @default(PENDING)
+  paidAt       DateTime?
+  recordedById String?
+  createdAt    DateTime  @default(now())
+
+  loan         Loan      @relation(fields: [loanId], references: [id])
+  recordedBy   User?     @relation("recorded_by", fields: [recordedById], references: [id])
+
+  @@unique([loanId, seq])
+}
+
+enum EmiStatus {
+  PENDING
+  PAID
+}
+
+model Settlement {
+  id                         String   @id @default(cuid())
+  loanId                     String
+  triggeredByUserId          String
+  triggeredAt                DateTime @default(now())
+  outstandingAtTriggerPaise  Int
+  borrowerAppliedPaise       Int
+  guarantorTotalPaise        Int
+  note                       String?
+  confirmedBy                String?
+
+  loan                       Loan                             @relation(fields: [loanId], references: [id])
+  triggeredBy                User                             @relation("triggered_by", fields: [triggeredByUserId], references: [id])
+  guarantorApplications      SettlementGuarantorApplication[]
+}
+
+model SettlementGuarantorApplication {
+  id           String     @id @default(cuid())
+  settlementId String
+  userId       String
+  appliedPaise Int        // negative value = deducted from savings
+
+  settlement   Settlement @relation(fields: [settlementId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  actorId     String?
+  kind        String   // e.g. CONTRIBUTION_PAID, LOAN_APPROVED, EMI_PAID, SETTLEMENT_APPLIED
+  entityType  String   // e.g. Contribution, Loan, Emi
+  entityId    String
+  payloadJson Json
+  createdAt   DateTime @default(now())
+
+  actor       User?    @relation(fields: [actorId], references: [id])
+}

@@ -1,0 +1,28 @@
+# deps
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# env (contains secrets)
+.env.local
+.env*.local
+
+# Prisma client output
+generated/
+
+# build
+build/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/settings.json
+*.swp
+
+# test coverage
+coverage/
