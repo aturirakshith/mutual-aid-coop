@@ -5,10 +5,14 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
 
-  // Public routes
-  if (pathname === "/login" || pathname.startsWith("/api/auth")) {
+  // Always allow NextAuth API routes (signout, csrf, session, etc.)
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
+  // Redirect already-logged-in users away from login page
+  if (pathname === "/login") {
     if (session) {
-      // Already logged in — redirect away from login
       return NextResponse.redirect(new URL("/", req.url));
     }
     return NextResponse.next();

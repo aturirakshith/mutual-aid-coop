@@ -36,19 +36,21 @@ export default async function MemberLedgerPage() {
       sign: c.status === "PAID" ? "+" : "−" as "+" | "−",
       note: c.note ?? undefined,
     })),
-    ...ledger.loans.map((l) => ({
-      id: l.id,
-      date: l.disbursedAt ?? l.requestedAt,
-      type: "loan" as const,
-      label: `Loan ${l.status === "DISBURSED" ? "Disbursed" : l.status}`,
-      amountPaise: l.disbursalPaise ?? 0,
-      sign: "−" as "+" | "−",
-    })),
+    ...ledger.loans
+      .filter((l) => l.status === "DISBURSED")
+      .map((l) => ({
+        id: l.id,
+        date: l.disbursedAt ?? l.requestedAt,
+        type: "loan" as const,
+        label: "Loan Disbursed",
+        amountPaise: l.disbursalPaise ?? 0,
+        sign: "−" as "+" | "−",
+      })),
     ...ledger.emis.map((e) => ({
       id: e.id,
       date: e.paidAt ?? e.dueDate,
       type: "emi" as const,
-      label: `EMI Repayment (EMI ${e.seq} of ${e.loan.tenureMonths})`,
+      label: `EMI Repayment (EMI ${e.seq} of ${e.loan.tenureMonths ?? 0})`,
       amountPaise: e.amountPaise,
       sign: "+" as "+" | "−",
     })),
