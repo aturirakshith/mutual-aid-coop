@@ -135,8 +135,8 @@ Run from `app/`:
 |---|---|
 | **Root Directory** | `app` |
 | **Runtime** | `Node` |
-| **Build Command** | `npm install && npm run build` |
-| **Start Command** | `node_modules/.bin/prisma migrate deploy && node_modules/.bin/next start -p $PORT` |
+| **Build Command** | `npm run build` |
+| **Start Command** | `npm start` |
 
 ### 3. Set environment variables
 
@@ -152,13 +152,13 @@ Run from `app/`:
 ### 4. How the build works
 
 ```
-npm install          → installs all dependencies
+npm install          → Render runs this automatically before the build command
   └─ postinstall     → prisma generate  (runs inside npm, .bin always in PATH)
-npm run build        → next build       (no prisma needed here)
+npm run build        → next build
 
-# on each deploy start:
-prisma migrate deploy → applies any pending DB migrations
-next start -p $PORT   → boots the app
+# npm start (runs on every deploy):
+prisma migrate deploy → applies any pending DB migrations (safe to repeat)
+next start            → boots the app, reads PORT env var automatically
 ```
 
 Future deploys are automatic on every `git push origin main`.

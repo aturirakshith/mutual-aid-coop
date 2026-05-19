@@ -13,7 +13,7 @@ Run from `app/`:
 - Lint : `npm run lint`
 - Type check : `npx tsc --noEmit`
 - DB migrate (dev) : `npm run db:migrate:dev`
-- DB migrate (prod) : `npm run db:migrate`
+- Start (prod)      : `npm start` — runs `prisma migrate deploy` then boots server
 - DB seed : `npm run db:seed`
 - DB reset : `npm run db:reset`
 - Prisma generate : runs automatically via `postinstall` after `npm install` — no manual step needed
