@@ -13,8 +13,10 @@ Run from `app/`:
 - Lint : `npm run lint`
 - Type check : `npx tsc --noEmit`
 - DB migrate (dev) : `npm run db:migrate:dev`
+- DB migrate (prod) : `npm run db:migrate`
 - DB seed : `npm run db:seed`
 - DB reset : `npm run db:reset`
+- Prisma generate : runs automatically via `postinstall` after `npm install` — no manual step needed
 
 ### Architecture
 - `src/app/(member)/` → member routes: dashboard, ledger, loans, roster
@@ -42,7 +44,7 @@ Run from `app/`:
 ### Workflow
 - Read the relevant page/action before editing; mirror the existing pattern instead of inventing a new one.
 - Prefer editing existing files; do not introduce new abstractions for one-shot fixes.
-- After schema edits: run `npm run db:migrate:dev` then `npm run db:generate`, then update affected actions and pages.
+- After schema edits: run `npm run db:migrate:dev` (generates client automatically), then update affected actions and pages.
 - Run `npx tsc --noEmit` and `npm test` before declaring a task done.
 - Commit style: short imperative subject (e.g. `fix loan approval pool check`), one logical change per commit.
 - Ask before: destructive DB ops on shared env, changes to auth/middleware, edits inside `prisma/migrations/`.

@@ -107,16 +107,61 @@ Run from `app/`:
 | Command | Description |
 |---|---|
 | `npm run dev` | Start dev server with hot reload |
-| `npm run build` | Production build |
+| `npm run build` | Production build (`next build`) |
 | `npm start` | Start production server |
+| `npm install` | Install deps — automatically runs `prisma generate` via `postinstall` |
 | `npm test` | Run full integration test suite |
 | `npx jest -- src/__tests__/path/to/file.test.ts` | Run a single test file |
 | `npm run lint` | ESLint check |
 | `npx tsc --noEmit` | TypeScript type check |
-| `npm run db:migrate:dev` | Apply pending Prisma migrations (dev) |
-| `npm run db:generate` | Regenerate Prisma client after schema change |
+| `npm run db:migrate:dev` | Create + apply a new Prisma migration (dev) |
+| `npm run db:migrate` | Apply pending migrations (production) |
 | `npm run db:seed` | Seed demo data |
 | `npm run db:reset` | Drop, recreate, and re-seed database |
+
+> `prisma generate` is wired to `postinstall` — it runs automatically after every `npm install`. You never need to run it manually.
+
+---
+
+## Deploy on Render
+
+### 1. Create a PostgreSQL database
+**New → PostgreSQL** → copy the **Internal Database URL**.
+
+### 2. Create a Web Service
+**New → Web Service → connect `mutual-aid-coop`**
+
+| Field | Value |
+|---|---|
+| **Root Directory** | `app` |
+| **Runtime** | `Node` |
+| **Build Command** | `npm install && npm run build` |
+| **Start Command** | `node_modules/.bin/prisma migrate deploy && node_modules/.bin/next start -p $PORT` |
+
+### 3. Set environment variables
+
+| Key | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `DATABASE_URL` | Internal Database URL from step 1 |
+| `NEXTAUTH_SECRET` | Run `openssl rand -base64 32` locally and paste result |
+| `NEXTAUTH_URL` | Your Render URL e.g. `https://macs-app.onrender.com` |
+
+> Set `NEXTAUTH_URL` after the service is created — that's when Render assigns the URL.
+
+### 4. How the build works
+
+```
+npm install          → installs all dependencies
+  └─ postinstall     → prisma generate  (runs inside npm, .bin always in PATH)
+npm run build        → next build       (no prisma needed here)
+
+# on each deploy start:
+prisma migrate deploy → applies any pending DB migrations
+next start -p $PORT   → boots the app
+```
+
+Future deploys are automatic on every `git push origin main`.
 
 ---
 
